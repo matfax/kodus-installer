@@ -1,0 +1,153 @@
+suite: Pod scheduling
+# nodeSelector / affinity / tolerations are pod-spec fields that render on EVERY
+# pod the chart creates. The resolution rule is the part worth pinning down: a
+# per-workload override REPLACES the global default for that field (it does not
+# merge), and an unset override falls back to the global one. helm lint and
+# kubeconform see only well-formed YAML either way — only these assertions catch
+# a global default that fails to reach a pod, or an override that silently merges
+# with (instead of replacing) the global value.
+# deployment.yaml annotates the pod with checksums of the ConfigMap and Secret,
+# so both templates must be loaded alongside it for the render to succeed.
+templates:
+  - templates/deployment.yaml
+  - templates/configmap.yaml
+  - templates/secrets.yaml
+release:
+  name: kodus
+tests:
+  - it: renders nothing by default, so existing installs are unaffected
+    documentSelector:
+      path: metadata.name
+      value: kodus-api
+    asserts:
+      - isNull:
+          path: spec.template.spec.nodeSelector
+      - isNull:
+          path: spec.template.spec.affinity
+      - isNull:
+          path: spec.template.spec.tolerations
+
+  - it: applies the global nodeSelector and tolerations to an app Deployment
+    set:
+      nodeSelector: { workload: ci }
+      tolerations:
+        - { key: workload, operator: Equal, value: ci, effect: NoSchedule }
+    documentSelector:
+      path: metadata.name
+      value: kodus-api
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci
+      - contains:
+          path: spec.template.spec.tolerations
+          content: { key: workload, operator: Equal, value: ci, effect: NoSchedule }
+
+  - it: lets a per-service override replace the global default on that workload
+    # worker gets its own selector — and ONLY its own (the global key is gone,
+    # proving the override replaces rather than merges).
+    set:
+      nodeSelector: { workload: ci }
+      services:
+        worker:
+          nodeSelector: { dedicated: worker }
+    documentSelector:
+      path: metadata.name
+      value: kodus-worker
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.dedicated
+          value: worker
+      - isNull:
+          path: spec.template.spec.nodeSelector.workload
+
+  - it: leaves other workloads on the global default when one service overrides
+    set:
+      nodeSelector: { workload: ci }
+      services:
+        worker:
+          nodeSelector: { dedicated: worker }
+    documentSelector:
+      path: metadata.name
+      value: kodus-api
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci
+---
+suite: Pod scheduling (migration Job)
+templates:
+  - templates/migration-job.yaml
+tests:
+  - it: applies the global defaults to the migration Job pod
+    set:
+      nodeSelector: { workload: ci }
+      tolerations:
+        - { key: workload, operator: Equal, value: ci, effect: NoSchedule }
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci
+      - contains:
+          path: spec.template.spec.tolerations
+          content: { key: workload, operator: Equal, value: ci, effect: NoSchedule }
+---
+suite: Pod scheduling (bundled Postgres)
+# In each bundled template the StatefulSet is the last document (ConfigMap/Service
+# precede it), so the assertions target it by index.
+templates:
+  - templates/datastores/bundled-postgres.yaml
+tests:
+  - it: applies the global nodeSelector to the StatefulSet
+    set:
+      nodeSelector: { workload: ci }
+    documentIndex: 2
+    asserts:
+      - isKind: { of: StatefulSet }
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci
+  - it: lets a bundled override add tolerations alongside the global nodeSelector
+    set:
+      nodeSelector: { workload: ci }
+      postgres:
+        bundled:
+          tolerations:
+            - { key: db, operator: Equal, value: postgres, effect: NoSchedule }
+    documentIndex: 2
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci
+      - contains:
+          path: spec.template.spec.tolerations
+          content: { key: db, operator: Equal, value: postgres, effect: NoSchedule }
+---
+suite: Pod scheduling (bundled MongoDB)
+templates:
+  - templates/datastores/bundled-mongodb.yaml
+tests:
+  - it: applies the global nodeSelector to the StatefulSet
+    set:
+      nodeSelector: { workload: ci }
+    documentIndex: 1
+    asserts:
+      - isKind: { of: StatefulSet }
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci
+---
+suite: Pod scheduling (bundled RabbitMQ)
+templates:
+  - templates/datastores/bundled-rabbitmq.yaml
+tests:
+  - it: applies the global nodeSelector to the StatefulSet
+    set:
+      nodeSelector: { workload: ci }
+    documentIndex: 2
+    asserts:
+      - isKind: { of: StatefulSet }
+      - equal:
+          path: spec.template.spec.nodeSelector.workload
+          value: ci

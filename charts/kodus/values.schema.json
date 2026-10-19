@@ -18,6 +18,18 @@
     "platform": {
       "enum": ["kubernetes", "openshift"]
     },
+    "nodeSelector": {
+      "type": "object",
+      "description": "Global pod nodeSelector; overridden per workload by services.<name>.nodeSelector / <store>.bundled.nodeSelector."
+    },
+    "affinity": {
+      "type": "object",
+      "description": "Global pod affinity (corev1.Affinity); overridden per workload by services.<name>.affinity / <store>.bundled.affinity."
+    },
+    "tolerations": {
+      "type": "array",
+      "description": "Global pod tolerations; overridden per workload by services.<name>.tolerations / <store>.bundled.tolerations."
+    },
     "imageTag": {
       "type": "string",
       "description": "Kodus release tag applied to all app images + migrations when their own image.tag is empty."

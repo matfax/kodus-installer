@@ -25,6 +25,7 @@ spec:
       restartPolicy: OnFailure
       securityContext:
         {{- include "kodus-common.podSecurityContext" . | nindent 8 }}
+      {{- include "kodus-common.scheduling" (dict "root" .) | nindent 6 }}
       initContainers:
         {{- include "kodus-common.waitForDeps" . | nindent 8 }}
       containers:

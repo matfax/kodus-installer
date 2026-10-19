@@ -69,6 +69,7 @@ spec:
       automountServiceAccountToken: false   # DB doesn't call the k8s API
       securityContext:
         {{- include "kodus-common.datastorePodSecurityContext" . | nindent 8 }}
+      {{- include "kodus-common.scheduling" (dict "root" . "override" $b) | nindent 6 }}
       initContainers:
         # fsGroup makes the kubelet add group rw to every file on the PVC at each
         # mount, turning the persisted .erlang.cookie into 0660. Erlang refuses to
