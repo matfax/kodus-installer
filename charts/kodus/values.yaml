@@ -226,6 +226,13 @@ imagePullSecrets: []
 waitForDeps:
   image: busybox:1.37.0
 
+# Each service below also accepts optional scheduling overrides —
+# nodeSelector / affinity / tolerations — which REPLACE the global defaults
+# (see the "Pod scheduling" block above) for that workload only, e.g.
+#   services:
+#     worker:
+#       tolerations:
+#         - {key: workload, operator: Equal, value: ci, effect: NoSchedule}
 services:
   web:
     enabled: true
@@ -383,6 +390,21 @@ podSecurityContext:
 containerSecurityContext:
   readOnlyRootFilesystem: true
 
+# --- Pod scheduling (global defaults) ---
+# Applied to EVERY pod this chart renders — the app Deployments, the migration
+# Job and the bundled datastore StatefulSets. Empty defaults leave scheduling to
+# the cluster, so existing installs are unaffected.
+#
+# Override per workload with services.<name>.{nodeSelector,affinity,tolerations}
+# or <store>.bundled.{nodeSelector,affinity,tolerations}; a per-workload value
+# REPLACES the matching global field for that pod (it does not merge). Use this
+# to pin the stack to a labeled node (nodeSelector) or let it run on a tainted
+# dedicated node (tolerations) — without it, a tainted target leaves every pod
+# Pending.
+nodeSelector: {}                    # e.g. {workload: ci}
+affinity: {}                        # a full corev1.Affinity (node/pod (anti-)affinity)
+tolerations: []                     # e.g. [{key: workload, operator: Equal, value: ci, effect: NoSchedule}]
+
 ingress:
   enabled: true
   className: nginx
@@ -520,6 +542,11 @@ resourceQuota:
 # Passwords for bundled mode are auto-generated (stable across upgrades) when left
 # empty. Single-replica bundled stores are for simple/trial installs; use external
 # or operator for production HA.
+#
+# Each <store>.bundled block also accepts optional nodeSelector / affinity /
+# tolerations, which REPLACE the global scheduling defaults (see the "Pod
+# scheduling" block above) for that datastore's StatefulSet. operator-mode
+# scheduling is set on the operator CR, not here.
 # =========================================================================
 
 postgres:
