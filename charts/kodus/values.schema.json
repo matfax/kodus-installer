@@ -74,6 +74,8 @@
         "appId": { "$ref": "#/definitions/secretKeyRef" },
         "clientId": { "$ref": "#/definitions/secretKeyRef" },
         "clientSecret": { "$ref": "#/definitions/secretKeyRef" },
+        "loginClientId": { "$ref": "#/definitions/secretKeyRef" },
+        "loginClientSecret": { "$ref": "#/definitions/secretKeyRef" },
         "privateKey": { "$ref": "#/definitions/secretKeyRef" }
       },
       "additionalProperties": false

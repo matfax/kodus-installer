@@ -27,6 +27,8 @@ tests:
         clientId: { name: gh-app }
         clientSecret: { name: gh-app }
         privateKey: { name: gh-app-pem, key: private-key.pem }
+        loginClientId: { name: gh-login }
+        loginClientSecret: { name: gh-login }
     documentSelector:
       path: metadata.name
       value: kodus-api
@@ -55,6 +57,18 @@ tests:
             name: API_GITHUB_PRIVATE_KEY
             valueFrom:
               secretKeyRef: { name: gh-app-pem, key: private-key.pem }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: WEB_OAUTH_GITHUB_CLIENT_ID
+            valueFrom:
+              secretKeyRef: { name: gh-login, key: WEB_OAUTH_GITHUB_CLIENT_ID }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: WEB_OAUTH_GITHUB_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef: { name: gh-login, key: WEB_OAUTH_GITHUB_CLIENT_SECRET }
 
   - it: reaches the workers too, not only the api
     set:
@@ -121,3 +135,23 @@ tests:
     asserts:
       - failedTemplate:
           errorPattern: githubApp\.clientId\.key is required
+
+  - it: rejects a literal web OAuth client secret in services.web.env
+    template: templates/deployment.yaml
+    set:
+      services:
+        web:
+          env:
+            WEB_OAUTH_GITHUB_CLIENT_SECRET: hunter2
+    asserts:
+      - failedTemplate:
+          errorPattern: WEB_OAUTH_GITHUB_CLIENT_SECRET must not be set in services\.web\.env.*githubApp\.loginClientSecret
+
+  - it: rejects half a login pair (client ID without the secret)
+    template: templates/deployment.yaml
+    set:
+      githubApp:
+        loginClientId: { name: gh-login }
+    asserts:
+      - failedTemplate:
+          errorPattern: githubApp\.loginClientId and githubApp\.loginClientSecret must be set together
