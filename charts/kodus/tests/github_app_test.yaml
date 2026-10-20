@@ -1,0 +1,123 @@
+suite: GitHub App credentials
+templates:
+  - templates/configmap.yaml
+  - templates/deployment.yaml
+  - templates/secrets.yaml
+release:
+  name: kodus
+# The App ID, client ID, client secret and private key reach the pods ONLY as
+# secretKeyRefs. A literal anywhere else would sit in cleartext in a ConfigMap or
+# the release manifest, so the render must refuse it rather than quietly accept it.
+tests:
+  - it: wires nothing when no GitHub App is configured
+    documentSelector:
+      path: metadata.name
+      value: kodus-api
+    asserts:
+      - notContains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_GITHUB_PRIVATE_KEY
+          any: true
+
+  - it: renders every field as a non-optional secretKeyRef
+    set:
+      githubApp:
+        appId: { name: gh-app }
+        clientId: { name: gh-app }
+        clientSecret: { name: gh-app }
+        privateKey: { name: gh-app-pem, key: private-key.pem }
+    documentSelector:
+      path: metadata.name
+      value: kodus-api
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_GITHUB_APP_ID
+            valueFrom:
+              secretKeyRef: { name: gh-app, key: API_GITHUB_APP_ID }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: GLOBAL_GITHUB_CLIENT_ID
+            valueFrom:
+              secretKeyRef: { name: gh-app, key: GLOBAL_GITHUB_CLIENT_ID }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_GITHUB_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef: { name: gh-app, key: API_GITHUB_CLIENT_SECRET }
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_GITHUB_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef: { name: gh-app-pem, key: private-key.pem }
+
+  - it: reaches the workers too, not only the api
+    set:
+      githubApp:
+        appId: { name: gh-app }
+        privateKey: { name: gh-app }
+    documentSelector:
+      path: metadata.name
+      value: kodus-worker
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: API_GITHUB_PRIVATE_KEY
+            valueFrom:
+              secretKeyRef: { name: gh-app, key: API_GITHUB_PRIVATE_KEY }
+
+  - it: rejects a literal private key in services.<name>.env
+    template: templates/deployment.yaml
+    set:
+      services:
+        api:
+          env:
+            API_GITHUB_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----"
+    asserts:
+      - failedTemplate:
+          errorPattern: API_GITHUB_PRIVATE_KEY must not be set in services\.api\.env.*githubApp\.privateKey
+
+  - it: rejects a literal App ID in global.config
+    template: templates/deployment.yaml
+    set:
+      global:
+        config:
+          API_GITHUB_APP_ID: "123456"
+    asserts:
+      - failedTemplate:
+          errorPattern: API_GITHUB_APP_ID must not be set in global\.config.*githubApp\.appId
+
+  - it: rejects a literal client secret in global.secrets
+    template: templates/deployment.yaml
+    set:
+      global:
+        secrets:
+          API_GITHUB_CLIENT_SECRET: hunter2
+    asserts:
+      - failedTemplate:
+          errorPattern: API_GITHUB_CLIENT_SECRET must not be set in global\.secrets
+
+  - it: rejects half an App (App ID without the private key)
+    template: templates/deployment.yaml
+    set:
+      githubApp:
+        appId: { name: gh-app }
+    asserts:
+      - failedTemplate:
+          errorPattern: githubApp\.appId and githubApp\.privateKey must be set together
+
+  - it: requires a key once a secret name is set
+    template: templates/deployment.yaml
+    set:
+      githubApp:
+        clientId: { name: gh-app, key: "" }
+        clientSecret: { name: gh-app }
+    asserts:
+      - failedTemplate:
+          errorPattern: githubApp\.clientId\.key is required

@@ -115,3 +115,38 @@ time. Call once with the root context.
 {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+GitHub App credentials are accepted ONLY as secret references (githubApp.<field>).
+The same keys set as plain strings — global.config lands in a ConfigMap, and
+services.<name>.env / global.secrets are values in the release manifest — would put
+the private key and client secret in cleartext wherever the values file travels, so
+the render fails and points at the supported field instead. Also rejects half an
+App: the app needs the App ID WITH the private key to mint installation tokens, and
+the client ID WITH the client secret for the OAuth install flow; one without the
+other only fails later, at runtime. Call once with the root context.
+*/}}
+{{- define "kodus.validateGithubApp" -}}
+{{- $fields := include "kodus-common.githubAppFields" . | fromYaml }}
+{{- $refs := .Values.githubApp | default dict }}
+{{- range $field, $env := $fields }}
+{{- $hint := printf "Set githubApp.%s to a secret reference ({name: <secret>, key: <key>}) instead of a literal value." $field }}
+{{- if hasKey ($.Values.global.config | default dict) $env }}
+{{- fail (printf "ERROR: %s must not be set in global.config. %s" $env $hint) }}
+{{- end }}
+{{- if hasKey ($.Values.global.secrets | default dict) $env }}
+{{- fail (printf "ERROR: %s must not be set in global.secrets. %s" $env $hint) }}
+{{- end }}
+{{- range $name, $svc := $.Values.services }}
+{{- if hasKey ($svc.env | default dict) $env }}
+{{- fail (printf "ERROR: %s must not be set in services.%s.env. %s" $env $name $hint) }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- range $pair := list (list "appId" "privateKey") (list "clientId" "clientSecret") }}
+{{- $a := index $pair 0 }}{{- $b := index $pair 1 }}
+{{- if ne (empty (dig $a "name" "" $refs)) (empty (dig $b "name" "" $refs)) }}
+{{- fail (printf "ERROR: githubApp.%s and githubApp.%s must be set together — the app cannot use one without the other." $a $b) }}
+{{- end }}
+{{- end }}
+{{- end }}

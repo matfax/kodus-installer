@@ -324,6 +324,32 @@ Left inline (dev), empty required keys are auto-generated with the correct forma
 (`API_CRYPTO_KEY`/`CODE_MANAGEMENT_SECRET` as 32-byte hex; JWT/NextAuth base64;
 `NEXTAUTH_SECRET` mirrors `WEB_NEXTAUTH_SECRET`) and are stable across upgrades.
 
+### GitHub App credentials
+
+Installing Kodus as your own GitHub App takes four values, and the chart accepts
+them **only as secret references** — never as strings in `global.config`,
+`global.secrets` or `services.<name>.env` (the render fails if you try):
+
+```bash
+kubectl create secret generic kodus-github-app \
+  --from-literal=API_GITHUB_APP_ID=123456 \
+  --from-literal=GLOBAL_GITHUB_CLIENT_ID=Iv1.abc123 \
+  --from-literal=API_GITHUB_CLIENT_SECRET=… \
+  --from-file=API_GITHUB_PRIVATE_KEY=./my-app.private-key.pem
+```
+
+```yaml
+githubApp:
+  appId:        { name: kodus-github-app }
+  clientId:     { name: kodus-github-app }
+  clientSecret: { name: kodus-github-app }
+  privateKey:   { name: kodus-github-app }
+```
+
+`key` defaults to the env var name shown above; set it when your Secret uses other
+key names (e.g. one synced from Vault). `appId`/`privateKey` and
+`clientId`/`clientSecret` are pairs — set both of a pair or neither.
+
 > Using Claude/Anthropic models? The Anthropic API key goes into
 > `API_OPEN_AI_API_KEY` — Kodus reads the single LLM key from that slot and picks
 > the SDK by model-id prefix.

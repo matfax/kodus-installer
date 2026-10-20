@@ -78,6 +78,7 @@ spec:
             {{- include "kodus-common.dbEnv" $ | nindent 12 }}
             {{- include "kodus-common.rabbitmqEnv" $ | nindent 12 }}
             {{- include "kodus-common.appSecretsEnv" $ | nindent 12 }}
+            {{- include "kodus-common.githubAppEnv" $ | nindent 12 }}
             {{- with $svc.env }}
             {{- range $k, $v := . }}
             - name: {{ $k }}

@@ -1,3 +1,6 @@
+{{- /* GitHub App credentials must arrive as secret refs, never as config/env
+       strings. Checked here because the ConfigMap always renders. See _helpers.tpl. */}}
+{{- include "kodus.validateGithubApp" . }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
