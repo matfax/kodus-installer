@@ -174,6 +174,24 @@ global:
     GLOBAL_AZURE_REPOS_CODE_MANAGEMENT_WEBHOOK: ""
     API_FORGEJO_CODE_MANAGEMENT_WEBHOOK: ""
 
+# --- GitHub App (optional) ---
+# Credentials of your own GitHub App, for installing Kodus as an App instead of
+# connecting with a personal access token. Each field is a REFERENCE to a key in a
+# Kubernetes Secret you create (kubectl, Vault / external-secrets sync, …) — never
+# a literal value. Setting these keys as plain strings in global.config,
+# global.secrets or services.<name>.env fails the render.
+#   appId + privateKey      → API_GITHUB_APP_ID / API_GITHUB_PRIVATE_KEY
+#                             (installation tokens; set both or neither)
+#   clientId + clientSecret → GLOBAL_GITHUB_CLIENT_ID / API_GITHUB_CLIENT_SECRET
+#                             (OAuth install flow; set both or neither)
+# Leave `name` empty to skip a field. `key` defaults to the env var name, so one
+# Secret holding all four under those names needs only `name` set on each.
+githubApp:
+  appId:        { name: "", key: API_GITHUB_APP_ID }
+  clientId:     { name: "", key: GLOBAL_GITHUB_CLIENT_ID }
+  clientSecret: { name: "", key: API_GITHUB_CLIENT_SECRET }
+  privateKey:   { name: "", key: API_GITHUB_PRIVATE_KEY }
+
 # Kodus release version applied to ALL app service images + migrations when their
 # own image.tag is empty — one value for the whole stack, like docker-compose
 # IMAGE_TAG. Override a single service via services.<name>.image.tag.

@@ -12,6 +12,15 @@
         }
       },
       "required": ["mode"]
+    },
+    "secretKeyRef": {
+      "type": "object",
+      "description": "Reference to a key in an existing Kubernetes Secret. Empty name = unset.",
+      "properties": {
+        "name": { "type": "string" },
+        "key": { "type": "string" }
+      },
+      "additionalProperties": false
     }
   },
   "properties": {
@@ -57,6 +66,17 @@
         "config": { "type": "object" },
         "secrets": { "type": "object" }
       }
+    },
+    "githubApp": {
+      "type": "object",
+      "description": "GitHub App credentials, each a secret reference — never a literal value.",
+      "properties": {
+        "appId": { "$ref": "#/definitions/secretKeyRef" },
+        "clientId": { "$ref": "#/definitions/secretKeyRef" },
+        "clientSecret": { "$ref": "#/definitions/secretKeyRef" },
+        "privateKey": { "$ref": "#/definitions/secretKeyRef" }
+      },
+      "additionalProperties": false
     },
     "postgres": { "$ref": "#/definitions/store" },
     "mongodb": { "$ref": "#/definitions/store" },

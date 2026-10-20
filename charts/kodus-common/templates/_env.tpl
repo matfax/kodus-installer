@@ -164,3 +164,35 @@ the SDK by model-id prefix).
       optional: true
 {{- end }}
 {{- end }}
+
+{{/*
+GitHub App credentials, keyed by the githubApp.<field> each is read from. Shared by
+the env block below and the kodus chart's validator, so the two cannot disagree.
+*/}}
+{{- define "kodus-common.githubAppFields" -}}
+appId: API_GITHUB_APP_ID
+clientId: GLOBAL_GITHUB_CLIENT_ID
+clientSecret: API_GITHUB_CLIENT_SECRET
+privateKey: API_GITHUB_PRIVATE_KEY
+{{- end }}
+
+{{/*
+GitHub App env vars — each a secretKeyRef built from githubApp.<field>.{name,key},
+never a literal value. A field with an empty name is skipped (no GitHub App, or
+OAuth-only). A referenced key is NOT optional: a typo'd key fails the pod at start
+instead of surfacing later as "GitHub App is not configured" on the first
+installation-token request. Call with root ctx.
+*/}}
+{{- define "kodus-common.githubAppEnv" -}}
+{{- $refs := .Values.githubApp | default dict }}
+{{- range $field, $env := (include "kodus-common.githubAppFields" . | fromYaml) }}
+{{- $ref := index $refs $field | default dict }}
+{{- if $ref.name }}
+- name: {{ $env }}
+  valueFrom:
+    secretKeyRef:
+      name: {{ $ref.name }}
+      key: {{ required (printf "githubApp.%s.key is required when githubApp.%s.name is set" $field $field) $ref.key }}
+{{- end }}
+{{- end }}
+{{- end }}
