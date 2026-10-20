@@ -184,13 +184,19 @@ global:
 #                             (installation tokens; set both or neither)
 #   clientId + clientSecret → GLOBAL_GITHUB_CLIENT_ID / API_GITHUB_CLIENT_SECRET
 #                             (OAuth install flow; set both or neither)
+#   loginClientId + loginClientSecret
+#                           → WEB_OAUTH_GITHUB_CLIENT_ID / WEB_OAUTH_GITHUB_CLIENT_SECRET
+#                             ("Sign in with GitHub" on the web UI; the same App's
+#                             client ID/secret or a separate OAuth App; set both or neither)
 # Leave `name` empty to skip a field. `key` defaults to the env var name, so one
-# Secret holding all four under those names needs only `name` set on each.
+# Secret holding them all under those names needs only `name` set on each.
 githubApp:
   appId:        { name: "", key: API_GITHUB_APP_ID }
   clientId:     { name: "", key: GLOBAL_GITHUB_CLIENT_ID }
   clientSecret: { name: "", key: API_GITHUB_CLIENT_SECRET }
   privateKey:   { name: "", key: API_GITHUB_PRIVATE_KEY }
+  loginClientId:     { name: "", key: WEB_OAUTH_GITHUB_CLIENT_ID }
+  loginClientSecret: { name: "", key: WEB_OAUTH_GITHUB_CLIENT_SECRET }
 
 # Kodus release version applied to ALL app service images + migrations when their
 # own image.tag is empty — one value for the whole stack, like docker-compose

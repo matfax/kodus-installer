@@ -123,8 +123,9 @@ services.<name>.env / global.secrets are values in the release manifest — woul
 the private key and client secret in cleartext wherever the values file travels, so
 the render fails and points at the supported field instead. Also rejects half an
 App: the app needs the App ID WITH the private key to mint installation tokens, and
-the client ID WITH the client secret for the OAuth install flow; one without the
-other only fails later, at runtime. Call once with the root context.
+the client ID WITH the client secret for the OAuth install flow (and likewise for
+the web "Sign in with GitHub" pair); one without the other only fails later, at
+runtime. Call once with the root context.
 */}}
 {{- define "kodus.validateGithubApp" -}}
 {{- $fields := include "kodus-common.githubAppFields" . | fromYaml }}
@@ -143,7 +144,7 @@ other only fails later, at runtime. Call once with the root context.
 {{- end }}
 {{- end }}
 {{- end }}
-{{- range $pair := list (list "appId" "privateKey") (list "clientId" "clientSecret") }}
+{{- range $pair := list (list "appId" "privateKey") (list "clientId" "clientSecret") (list "loginClientId" "loginClientSecret") }}
 {{- $a := index $pair 0 }}{{- $b := index $pair 1 }}
 {{- if ne (empty (dig $a "name" "" $refs)) (empty (dig $b "name" "" $refs)) }}
 {{- fail (printf "ERROR: githubApp.%s and githubApp.%s must be set together — the app cannot use one without the other." $a $b) }}

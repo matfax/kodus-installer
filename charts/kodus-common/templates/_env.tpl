@@ -173,13 +173,15 @@ the env block below and the kodus chart's validator, so the two cannot disagree.
 appId: API_GITHUB_APP_ID
 clientId: GLOBAL_GITHUB_CLIENT_ID
 clientSecret: API_GITHUB_CLIENT_SECRET
+loginClientId: WEB_OAUTH_GITHUB_CLIENT_ID
+loginClientSecret: WEB_OAUTH_GITHUB_CLIENT_SECRET
 privateKey: API_GITHUB_PRIVATE_KEY
 {{- end }}
 
 {{/*
 GitHub App env vars — each a secretKeyRef built from githubApp.<field>.{name,key},
-never a literal value. A field with an empty name is skipped (no GitHub App, or
-OAuth-only). A referenced key is NOT optional: a typo'd key fails the pod at start
+never a literal value. A field with an empty name is skipped (no GitHub App, an
+OAuth-only setup, or no "Sign in with GitHub"). A referenced key is NOT optional: a typo'd key fails the pod at start
 instead of surfacing later as "GitHub App is not configured" on the first
 installation-token request. Call with root ctx.
 */}}

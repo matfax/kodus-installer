@@ -326,8 +326,9 @@ Left inline (dev), empty required keys are auto-generated with the correct forma
 
 ### GitHub App credentials
 
-Installing Kodus as your own GitHub App takes four values, and the chart accepts
-them **only as secret references** — never as strings in `global.config`,
+Installing Kodus as your own GitHub App takes four values, plus two more for
+"Sign in with GitHub" on the web UI, and the chart accepts them **only as secret
+references** — never as strings in `global.config`,
 `global.secrets` or `services.<name>.env` (the render fails if you try):
 
 ```bash
@@ -335,7 +336,9 @@ kubectl create secret generic kodus-github-app \
   --from-literal=API_GITHUB_APP_ID=123456 \
   --from-literal=GLOBAL_GITHUB_CLIENT_ID=Iv1.abc123 \
   --from-literal=API_GITHUB_CLIENT_SECRET=… \
-  --from-file=API_GITHUB_PRIVATE_KEY=./my-app.private-key.pem
+  --from-file=API_GITHUB_PRIVATE_KEY=./my-app.private-key.pem \
+  --from-literal=WEB_OAUTH_GITHUB_CLIENT_ID=Iv1.abc123 \
+  --from-literal=WEB_OAUTH_GITHUB_CLIENT_SECRET=…
 ```
 
 ```yaml
@@ -344,11 +347,15 @@ githubApp:
   clientId:     { name: kodus-github-app }
   clientSecret: { name: kodus-github-app }
   privateKey:   { name: kodus-github-app }
+  loginClientId:     { name: kodus-github-app }   # optional: "Sign in with GitHub"
+  loginClientSecret: { name: kodus-github-app }
 ```
 
 `key` defaults to the env var name shown above; set it when your Secret uses other
-key names (e.g. one synced from Vault). `appId`/`privateKey` and
-`clientId`/`clientSecret` are pairs — set both of a pair or neither.
+key names (e.g. one synced from Vault). `appId`/`privateKey`,
+`clientId`/`clientSecret` and `loginClientId`/`loginClientSecret` are pairs — set
+both of a pair or neither. The login pair can reuse the same App's client ID and
+secret, or come from a separate OAuth App.
 
 > Using Claude/Anthropic models? The Anthropic API key goes into
 > `API_OPEN_AI_API_KEY` — Kodus reads the single LLM key from that slot and picks
